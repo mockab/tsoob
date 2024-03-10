@@ -75,7 +75,12 @@ done
 # Assign the IP address to the interface
 ip addr add $ip_address/24 dev $interface
 
-# Enable tailscale and advertise route for ilo
-tailscale up --accept-dns=false --advertise-routes=$netdiscover_output/32
+tailscale_options="--accept-dns=false"
+if [-n "$TON_TAILSCALE_OPTIONS" ]; then
+  tailscale_options+=" $TON_TAILSCALE_OPTIONS"
+fi
+
+#Enable tailscale and advertise route for ilo
+tailscale up $tailscale_options --advertise-routes=$netdiscover_output/32
  
 echo "IP address $ip_address assigned to $interface on network $netdiscover_output."
