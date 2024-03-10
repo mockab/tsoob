@@ -1,0 +1,8 @@
+#example .ton file
+
+# Define target oob management ip that should be used
+TON_NETDISCOVER_OUTPUT="192.168.1.5"
+
+# Additional Tailscale CLI options
+# tailscale.com/kb/1080/cli#up
+TAILSCALE_OPTIONS="--accept-routes"
