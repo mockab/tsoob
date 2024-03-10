@@ -28,8 +28,8 @@ ip addr flush dev $interface
 ton_file_path=$(find /media/ -name '*.ton' -print -quit)
 
 if [ -z "$ton_file_path" ]; then
-  echo "No USB drive with .ton file found."
-  exit 1
+  echo "No USB drive with .ton file found. Moving on..."
+  exit 0
 fi
 
 # Extract predefined variables from .ton file
