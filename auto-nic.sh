@@ -24,12 +24,27 @@ fi
 # Wipe the existing configuration on the interface
 ip addr flush dev $interface
 
-# Perform netdiscover on the second interface
-echo "Running netdiscover on $interface..."
-netdiscover_output=$(netdiscover -PNi $interface | { head -1 && pkill -f "netdiscover -PNi $interface"; } | egrep -o '([0-9]{1,3}\.){3}[0-9]{1,3}')
+# Check for a USB drive with .ton file
+ton_file_path=$(find /media/ -name '*.ton' -print -quit)
 
-# Show the ip it found
-echo "Found address $netdiscover_output on the other end of $interface"
+if [ -z "$ton_file_path" ]; then
+  echo "No USB drive with .ton file found."
+  exit 1
+fi
+
+# Extract predefined variables from .ton file
+source "$ton_file_path"
+
+# Check if the .ton file contains netdiscover output variable
+if [ -z "$TON_NETDISCOVER_OUTPUT" ]; then
+  # Perform netdiscover on the second interface
+  echo "Running netdiscover on $interface..."
+  netdiscover_output=$(netdiscover -PNi $interface | { head -1 && pkill -f "netdiscover -PNi $interface"; } | egrep -o '([0-9]{1,3}\.){3}[0-9]{1,3}')
+  echo "Found address $netdiscover_output on the other end of $interface"
+else
+  netdiscover_output="$TON_NETDISCOVER_OUTPUT"
+  echo "Using predefined desination ip from .ton file: $netdiscover_output"
+fi
 
 # Extract the first three octets of the discovered network
 discovered_network_octets=$(echo "$netdiscover_output" | awk -F. '{print $1"."$2"."$3}')
@@ -47,7 +62,7 @@ done
 # Assign the IP address to the interface
 ip addr add $ip_address/24 dev $interface
 
-# enable tailscale and advertise route for ilo
+# Enable tailscale and advertise route for ilo
 tailscale up --accept-dns=false --advertise-routes=$netdiscover_output/32
 
 echo "IP address $ip_address assigned to $interface on network $netdiscover_output."
