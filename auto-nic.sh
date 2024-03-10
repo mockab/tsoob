@@ -76,7 +76,7 @@ done
 ip addr add $ip_address/24 dev $interface
 
 tailscale_options="--accept-dns=false"
-if [-n "$TON_TAILSCALE_OPTIONS" ]; then
+if [ -n "$TON_TAILSCALE_OPTIONS" ]; then
   tailscale_options+=" $TON_TAILSCALE_OPTIONS"
 fi
 
