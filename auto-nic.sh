@@ -29,11 +29,12 @@ ton_file_path=$(find /media/ -name '*.ton' -print -quit)
 
 if [ -z "$ton_file_path" ]; then
   echo "No USB drive with .ton file found. Moving on..."
-  exit 0
 fi
 
 # Extract predefined variables from .ton file
-source "$ton_file_path"
+if [ -e "$ton_file_path" ]; then
+  source "$ton_file_path"
+fi
 
 # Check if the .ton file contains netdiscover output variable
 if [ -z "$TON_NETDISCOVER_OUTPUT" ]; then
