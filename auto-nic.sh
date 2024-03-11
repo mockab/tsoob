@@ -1,6 +1,6 @@
 #!/bin/bash
 
-CONFIG_FILE="/etc/network-config"
+CONFIG_FILE="/etc/tsoob.cfg"
 
 # Check if the script is run as root
 if [ "$EUID" -ne 0 ]; then
