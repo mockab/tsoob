@@ -28,9 +28,6 @@ if ! ip link show dev "$interface" | grep -q "UP"; then
   sleep 2 # Wait for the interface to be fully up
 fi
 
-# Wipe the existing configuration on the interface
-ip addr flush dev $interface
-
 # Check for a USB drive with .ton file
 ton_file_path=$(find /media/ -name '*.ton' -print -quit)
 
@@ -45,15 +42,17 @@ fi
 
 # Check if the saved configuration still works
 if [ -n "$SAVED_NETDISCOVER_OUTPUT" ]; then
-  if ping -c 1 -W 1 "$SAVED_NETDISCOVER_OUTPUT" &>/dev/null; then
+  if ping -c 1 "$SAVED_NETDISCOVER_OUTPUT" &> /dev/null; then
     echo "Previous configuration is still valid. Skipping netdiscover."
     netdiscover_output="$SAVED_NETDISCOVER_OUTPUT"
   else
     echo "Previous configuration is not valid. Running netdiscover..."
+    ip addr flush dev $interface
     netdiscover_output=$(netdiscover -PNi $interface | { head -1 && pkill -f "netdiscover -PNi $interface"; } | egrep -o '([0-9]{1,3}\.){3}[0-9]{1,3}')
   fi
 else
   echo "No previous configuration found. Running netdiscover..."
+  ip addr flush dev $interface
   netdiscover_output=$(netdiscover -PNi $interface | { head -1 && pkill -f "netdiscover -PNi $interface"; } | egrep -o '([0-9]{1,3}\.){3}[0-9]{1,3}')
 fi
 
@@ -67,12 +66,16 @@ discovered_network_octets=$(echo "$netdiscover_output" | awk -F. '{print $1"."$2
 ip_address="${discovered_network_octets}.2"
 while ip addr | grep -q "$ip_address/24" || [ "$ip_address" == "$netdiscover_output" ]; do
   echo "IP address $ip_address is in use. Incrementing..."
-  ip_address=$(awk -F'.' '{print $1"."$2"."$3}' <<< "$ip_address")
-  last_octet=$((10#${ip_address##*.}))  # Ensure the last octet is treated as base 10
-  ip_address=$(awk -F'.' -v last_octet="$last_octet" '{print $1"."$2"."$3"."last_octet+1}' <<< "$ip_address")
+  last_octet=$((10#${ip_address##*.}))
+  last_octet=$((last_octet + 1))
+  ip_address="${discovered_network_octets}.${last_octet}"
 done
 
+# Save the current configuration to the file
+echo "SAVED_NETDISCOVER_OUTPUT=$netdiscover_output" > "$CONFIG_FILE"
+
 # Assign the IP address to the interface
+ip addr flush dev $interface
 ip addr add $ip_address/24 dev $interface
 
 tailscale_options="--accept-dns=false"
